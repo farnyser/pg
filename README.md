@@ -12,3 +12,8 @@ neural network
 --------------
 
 Basic neural network
+
+IoC
+---
+
+Functional style inversion of control 
