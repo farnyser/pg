@@ -3,12 +3,12 @@ C++ PlayGround
 
 Just a little C++ fun
 
-sort
+Sort
 ----
 
 Some sorting algorithm implementation
 
-neural network
+Neural Network
 --------------
 
 Basic neural network
@@ -17,3 +17,8 @@ IoC
 ---
 
 Functional style inversion of control 
+
+Genetic Algorithm
+-----------------
+
+Functional generic genetic algorithm
