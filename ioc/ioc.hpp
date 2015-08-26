@@ -17,9 +17,9 @@
 
 	#define resolve(INAME) ioc<INAME>()
 	#define register(INAME, IMPL) \
-		{ INAME::function function = ioc<INAME>(); ioc<INAME>() = [function] IMPL; }
+		{ typename INAME::function function = ioc<INAME>(); ioc<INAME>() = [function] IMPL; }
 	#define extends(INAME, IBASE) \
-		{ IBASE::function function = ioc<IBASE>(); ioc<INAME>() = function; }
+		{ typename IBASE::function function = ioc<IBASE>(); ioc<INAME>() = function; }
 	#define resolvable(INAME, SIGNATURE) \
 		class INAME \
 		{ \

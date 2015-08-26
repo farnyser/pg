@@ -1,6 +1,7 @@
 #ifndef __PG_GA__
 #define __PG_GA__
 
+#include "ioc/ioc.hpp"
 #include <random>
 #include <functional>
 #include <cstdlib>
@@ -8,100 +9,93 @@
 
 namespace pg
 {
-	template<class T> 
-	class ga 
+	namespace ga
 	{
-		public:			
-			struct creature
-			{
-				T value;
-				int age;
-				double fitness;
+		template<typename T>
+		struct creature
+		{
+			T value;
+			int age;
+			double fitness;
 
-				creature(const ga<T>&, const T& value);
-			};
+			creature(const T& value);
+		};
 
-			using GA = ga<T>;
-			using world = std::vector<creature>;
-			using underlying = T;
-			using evaluate_fct = std::function<double(const GA&, const creature&)>;
-			using mutate_fct = std::function<creature(const GA&, const creature&)>;
-			using merge_fct = std::function<creature(const GA&, const creature&, const creature&)>;
-			using generate_fct = std::function<creature(const GA&)>;
-			using generate_world_fct = std::function<world(const GA&, int)>;
-			using end_of_the_world_fct = std::function<bool(const GA&, world&)>;
-			using evolve_fct = std::function<void(const GA&, world&)>;
-			using reproduce_fct = std::function<void(const GA&, world&)>;
-			using kill_fct = std::function<void(const GA&, world&)>;
-			using age_fct = std::function<void(const GA&, world&)>;
-			using select_fct = std::function<typename world::iterator(const GA&, world&, const evaluate_fct&)>;
-			using lifecycle_fct = std::function<world(const GA&)>;
-			using rand_fct = std::function<double(const GA&, double, double)>;
+		template<typename T>
+		using world = std::vector<creature<T>>;
 
-			evaluate_fct evaluate;
-			evaluate_fct select_best;
-			evaluate_fct select_worst;
-			evaluate_fct select_random;
-			select_fct random;
-			select_fct select;
-			merge_fct merge;
-			mutate_fct mutate;
-			generate_fct generate;
-			generate_world_fct generate_world;
-			end_of_the_world_fct end_of_the_world;
-			reproduce_fct reproduce;
-			evolve_fct evolve;
-			kill_fct kill;
-			age_fct age;
-			lifecycle_fct lifecycle;
-			rand_fct rand;
+		template<typename T>
+		resolvable(IEvaluate, double(const creature<T>&));
 
-			int world_size;
-			double reproduction_rate;
-			double kill_rate;
-			double mutate_rate;
+		template<typename T>
+		resolvable(ISelectBest, double(const creature<T>&));
 
-		public:
-			ga();
+		template<typename T>
+		resolvable(ISelectWorst, double(const creature<T>&));
+
+		template<typename T>
+		resolvable(ISelectRandom, double(const creature<T>&));
+
+		template<typename T>
+		resolvable(IMutate, creature<T>(const creature<T>&));
+
+		template<typename T>
+		resolvable(IMerge, creature<T>(const creature<T>&, const creature<T>&));
+
+		template<typename T>
+		resolvable(IGenerate, creature<T>());
+
+		template<typename T>
+		resolvable(IGenerateWorld, world<T>());
+
+		template<typename T>
+		resolvable(IEndOfTheWorld, bool(world<T>&));
+
+		template<typename T>
+		resolvable(IEvolve, void(world<T>&));
+
+		template<typename T>
+		resolvable(IReproduce, void(world<T>&));
+
+		template<typename T>
+		resolvable(IKill, void(world<T>&));
+
+		template<typename T>
+		resolvable(IAge, void(world<T>&));
+
+		template<typename T>
+		resolvable(ILifeCycle, world<T>());
+
+		template<typename T>
+		resolvable(ISelect, typename world<T>::iterator(world<T>&, const typename IEvaluate<T>::function&));
+
+		template<typename T>
+		resolvable(IRandom, typename world<T>::iterator(world<T>&, const typename IEvaluate<T>::function&));
+
+		template<typename T>
+		resolvable(IRand, double(double, double));
+
+		template<typename T>
+		resolvable(IGetInitialWorldSize, int());
+
+		template<typename T>
+		resolvable(IGetReproductionRate, double());
+
+		template<typename T>
+		resolvable(IGetKillRate, double());
+
+		template<typename T>
+		resolvable(IGetMutateRate, double());
 	};
 }
 
-#include "ga.default.hpp"
-
-template<class T>
-pg::ga<T>::creature::creature(const GA& ga, const T& value)
+template<typename T>
+pg::ga::creature<T>::creature(const T& value)
  : age(0), value(value)
 {
-	fitness = ga.evaluate(ga, *this);
+	fitness = resolve(IEvaluate<T>)(*this);
 }
 
-template<class T>
-pg::ga<T>::ga() 
-{
-	pg::ga_default<T> gadef;
-
-	evaluate = gadef.evaluate;
-	select_best = gadef.select_best;
-	select_worst = gadef.select_worst;
-	select_random = gadef.select_random;
-	random = gadef.random;
-	select = gadef.select;
-	merge = gadef.merge;
-	mutate = gadef.mutate;
-	generate = gadef.generate;
-	generate_world = gadef.generate_world;
-	end_of_the_world = gadef.end_of_the_world;
-	reproduce = gadef.reproduce;
-	evolve = gadef.evolve;
-	kill = gadef.kill;
-	age = gadef.age;
-	lifecycle = gadef.lifecycle;
-	rand = gadef.rand;
-
-	world_size = gadef.world_size;
-	reproduction_rate = gadef.reproduction_rate;
-	kill_rate = gadef.kill_rate;
-	mutate_rate = gadef.mutate_rate;
-}
+#include "ga.default.hpp"
 
 #endif
