@@ -3,11 +3,6 @@ C++ PlayGround
 
 Just a little C++ fun
 
-Sort
-----
-
-Some sorting algorithm implementation
-
 Neural Network
 --------------
 
@@ -22,3 +17,14 @@ Genetic Algorithm
 -----------------
 
 Functional generic genetic algorithm
+
+SmartCache
+----------
+
+Cache with automatic invalidation and recomputing
+
+
+Sort
+----
+
+Some sorting algorithm implementation
