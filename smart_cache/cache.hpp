@@ -17,14 +17,14 @@ namespace cache
 	std::stack<std::function<void()>> context_invalidator;
 
 	template<typename T = void, typename... ARGS>
-	class cache
+	class cache_t
 	{
 	public:
 		typedef std::function<T(ARGS...)> function_t;
 		typedef std::tuple<ARGS...> key_t;
 		
 		template<typename... Args>
-		cache(const std::string& n, Args... args) : 
+		cache_t(const std::string& n, Args... args) : 
 			name(n), 
 			key(tuple<ARGS...>::make(args...)), 
 			key_set(tuple<ARGS...>::valid(args...))
@@ -39,14 +39,16 @@ namespace cache
 			if(key_set && sizeof...(Args) == 0)
 				return valididty(name, key);
 			else
-				return cache<T, Args...>::valididty(name, std::make_tuple(args...));
+				return cache_t<T, Args...>::valididty(name, std::make_tuple(args...));
 		}
 
 		template<typename... Args>
 		T operator()(Args... args) const
-		{
-			// todo use key if key_set
-			return cache<T, Args...>::getValue(name, args...);
+		{			
+			if(key_set && sizeof...(Args) == 0) 
+				return getValue(name, key);
+			else
+				return cache_t<T, Args...>::getValue(name, std::make_tuple(args...));
 		};
 
 		template<typename... Args>
@@ -55,42 +57,44 @@ namespace cache
 			if(key_set && sizeof...(Args) == 0)
 				return getCachedValue(name, key);
 			else
-				return cache<T, Args...>::getCachedValue(name, std::make_tuple(args...));
+				return cache_t<T, Args...>::getCachedValue(name, std::make_tuple(args...));
 		};
 
-		cache& operator=(T value) 
+		template<typename O>
+		cache_t& operator=(O value) 
 		{
 			if(!key_set) 
 			{
-				setValue(name, value);
+				cache_t<O,ARGS...>::setValue(name, value);
 			}
 			else 
 			{
-				if(valididty(name, key))
-					invalidate(name, key);
-				cached(name, key) = value;
-				valididty(name, key) = true;
+				if(cache_t<O,ARGS...>::valididty(name, key))
+					cache_t<O,ARGS...>::invalidate(name, key);
+				cache_t<O,ARGS...>::cached(name, key) = value;
+				cache_t<O,ARGS...>::valididty(name, key) = true;
 			}
 
 			return *this;
-		};
+		}
 		
-		template<typename... Args>
-		cache& operator=(const std::function<T(Args...)>& function) 
+		template<typename O, typename... Args>
+		cache_t& operator=(const std::function<O(Args...)>& function) 
 		{
 			if(key_set && sizeof...(ARGS))
 				throw std::runtime_error("Can't assign computer callback to specific value of " + name);
 
-			cache<T, Args...>::set(name, function);
+			cache_t<O, Args...>::set(name, function);
 			return *this;
 		};
 
-		cache& operator=(const std::function<T(ARGS...)>& function) 
+		template<typename O>
+		cache_t& operator=(const std::function<O(ARGS...)>& function) 
 		{			
 			if(key_set && sizeof...(ARGS))
 				throw std::runtime_error("Can't assign computer callback to specific value of " + name);
 
-			set(name, function);
+			cache_t<O,ARGS...>::set(name, function);
 			return *this;
 		};
 
@@ -100,7 +104,7 @@ namespace cache
 		const bool key_set;
 
 		template<typename To, typename... ARGSo> 
-		friend class cache;
+		friend class cache_t;
 
 		static std::map<std::string, std::map<key_t, std::vector<std::function<void()>>>> invalidators;
 		static std::map<std::string, std::map<key_t, bool>> valididty_map;
@@ -119,14 +123,14 @@ namespace cache
 
 		static void invalidate_all(const std::string& name) 
 		{
-			for(auto& kv : cache<T, ARGS...>::valididty_map[name]) 
+			for(auto& kv : cache_t<T, ARGS...>::valididty_map[name]) 
 				invalidate(name, kv.first);
 		};
 
 		static void set(const std::string& name, const function_t& f) 
 		{
 			if(get(name))
-				cache<T, ARGS...>::invalidate_all(name);
+				cache_t<T, ARGS...>::invalidate_all(name);
 			get(name) = f;
 		};
 
@@ -142,20 +146,19 @@ namespace cache
 			return cache[name][key];
 		}
 
-		static T getValue(const std::string& name, ARGS... args)
+		static T getValue(const std::string& name, const key_t& key)
 		{
-			const key_t key(args...);
-
 			if(!context_invalidator.empty())
 				invalidators[name][key].push_back(context_invalidator.top());
 			
 			context_invalidator.push([=](){ 
-				cache<T, ARGS...>::invalidate(name, key); 
+				cache_t<T, ARGS...>::invalidate(name, key); 
 			});
 
 			if(!valididty(name, key)) 
 			{
-				cached(name, key) = get(name)(args...);
+				auto func = get(name);
+				cached(name, key) = tuple<void>::apply(func, key);
 				valididty(name, key) = true;
 			};
 
@@ -171,17 +174,30 @@ namespace cache
 
 		static void setValue(const std::string& name, const T& value)
 		{
-			cache<T, ARGS...>::invalidate_all(name);
-			cache<T, ARGS...>::set(name, [value](ARGS... args) { return value; });
+			cache_t<T, ARGS...>::invalidate_all(name);
+			cache_t<T, ARGS...>::set(name, [value](ARGS... args) { return value; });
 		}
 	};
 	
 	template<typename T, typename... Args>
-	std::map<std::string, std::map<std::tuple<Args...>, std::vector<std::function<void()>>>> cache<T,Args...>::invalidators;
+	std::map<std::string, std::map<std::tuple<Args...>, std::vector<std::function<void()>>>> cache_t<T,Args...>::invalidators;
 
 	template<typename T, typename... Args>
-	std::map<std::string, std::map<std::tuple<Args...>, bool>> cache<T,Args...>::valididty_map;
+	std::map<std::string, std::map<std::tuple<Args...>, bool>> cache_t<T,Args...>::valididty_map;
+
+	template <typename T = bool, typename... ARGS>
+	cache_t<T,ARGS...> cache(const std::string& name) 
+	{
+		return cache_t<T, ARGS...>(name);
+	}
+
+	template <typename T = bool, typename... ARGS>
+	cache_t<T,ARGS...> cache(const std::string& name, ARGS... args) 
+	{
+		return cache_t<T, ARGS...>(name, args...);
+	}
 }
 }
+
 
 #endif
