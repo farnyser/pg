@@ -33,4 +33,55 @@ std::string operator"" _s(const char* str, size_t size)
     return std::string(str);
 };
 
+namespace pg 
+{
+	template<typename... ARGS>
+	struct tuple 
+	{
+		template<typename... Args> 
+		static 			
+		typename std::enable_if<
+			std::is_same<std::tuple<Args...>, std::tuple<ARGS...>>::value 
+			, std::tuple<ARGS...>
+		>::type
+		make(Args... args)
+		{
+			return std::make_tuple(args...);
+		}
+
+		template<typename... Args> 
+		static 			
+		typename std::enable_if<
+			!std::is_same<std::tuple<Args...>, std::tuple<ARGS...>>::value 
+			, std::tuple<ARGS...>
+		>::type
+		make(Args... args)
+		{
+			return std::tuple<ARGS...>();
+		}
+
+		template<typename... Args> 
+		static 			
+		typename std::enable_if<
+			std::is_same<std::tuple<Args...>, std::tuple<ARGS...>>::value 
+			, bool
+		>::type
+		valid(Args... args)
+		{
+			return true;
+		}
+
+		template<typename... Args> 
+		static 			
+		typename std::enable_if<
+			!std::is_same<std::tuple<Args...>, std::tuple<ARGS...>>::value 
+			, bool
+		>::type
+		valid(Args... args)
+		{
+			return false;
+		}
+	};
+}
+
 #endif

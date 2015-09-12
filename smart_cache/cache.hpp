@@ -6,6 +6,9 @@
 #include <vector>
 #include <stack>
 #include <functional>
+#include <type_traits>
+
+#include "cache.helpers.hpp"
 
 namespace pg
 {
@@ -16,57 +19,88 @@ namespace cache
 	template<typename T = void, typename... ARGS>
 	class cache
 	{
-	private:
-		std::string name;
-	
 	public:
-		cache(const std::string& n) : name(n)
+		typedef std::function<T(ARGS...)> function_t;
+		typedef std::tuple<ARGS...> key_t;
+		
+		template<typename... Args>
+		cache(const std::string& n, Args... args) : 
+			name(n), 
+			key(tuple<ARGS...>::make(args...)), 
+			key_set(tuple<ARGS...>::valid(args...))
 		{
+			if(sizeof...(Args) != 0 && !key_set)
+				throw std::runtime_error("Invalid parameters provided");
 		};
 
 		template<typename... Args>
 		bool valid(Args... args) const 
 		{
-			return cache<T, Args...>::valididty(name, std::make_tuple(args...));
+			if(key_set && sizeof...(Args) == 0)
+				return valididty(name, key);
+			else
+				return cache<T, Args...>::valididty(name, std::make_tuple(args...));
 		}
 
 		template<typename... Args>
 		T operator()(Args... args) const
 		{
+			// todo use key if key_set
 			return cache<T, Args...>::getValue(name, args...);
 		};
 
 		template<typename... Args>
 		T cached(Args... args) const
 		{
-			return cache<T, Args...>::getCachedValue(name, args...);
+			if(key_set && sizeof...(Args) == 0)
+				return getCachedValue(name, key);
+			else
+				return cache<T, Args...>::getCachedValue(name, std::make_tuple(args...));
 		};
 
 		cache& operator=(T value) 
 		{
-			setValue(name, value);
+			if(!key_set) 
+			{
+				setValue(name, value);
+			}
+			else 
+			{
+				if(valididty(name, key))
+					invalidate(name, key);
+				cached(name, key) = value;
+				valididty(name, key) = true;
+			}
+
 			return *this;
 		};
 		
 		template<typename... Args>
 		cache& operator=(const std::function<T(Args...)>& function) 
 		{
+			if(key_set && sizeof...(ARGS))
+				throw std::runtime_error("Can't assign computer callback to specific value of " + name);
+
 			cache<T, Args...>::set(name, function);
 			return *this;
 		};
 
 		cache& operator=(const std::function<T(ARGS...)>& function) 
-		{
+		{			
+			if(key_set && sizeof...(ARGS))
+				throw std::runtime_error("Can't assign computer callback to specific value of " + name);
+
 			set(name, function);
 			return *this;
 		};
 
 	private:
+		const std::string name;
+		const key_t key;
+		const bool key_set;
+
 		template<typename To, typename... ARGSo> 
 		friend class cache;
-
-		typedef std::function<T(ARGS...)> function_t;
-		typedef std::tuple<ARGS...> key_t;
 
 		static std::map<std::string, std::map<key_t, std::vector<std::function<void()>>>> invalidators;
 		static std::map<std::string, std::map<key_t, bool>> valididty_map;
@@ -91,7 +125,8 @@ namespace cache
 
 		static void set(const std::string& name, const function_t& f) 
 		{
-			cache<T, ARGS...>::invalidate_all(name);
+			if(get(name))
+				cache<T, ARGS...>::invalidate_all(name);
 			get(name) = f;
 		};
 
@@ -129,9 +164,8 @@ namespace cache
 			return cached(name, key);
 		}
 
-		static T getCachedValue(const std::string& name, ARGS... args)
+		static T getCachedValue(const std::string& name, const key_t& key)
 		{
-			const key_t key(args...);
 			return cached(name, key);
 		}
 
@@ -149,7 +183,5 @@ namespace cache
 	std::map<std::string, std::map<std::tuple<Args...>, bool>> cache<T,Args...>::valididty_map;
 }
 }
-
-#include "cache.helpers.hpp"
 
 #endif
