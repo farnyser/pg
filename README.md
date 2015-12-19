@@ -23,6 +23,10 @@ SmartCache
 
 Cache with automatic invalidation and recomputing
 
+Dynamic Data Holder
+-------------------
+
+Class helper to create POD-like object with runtime defined attributes
 
 Sort
 ----
