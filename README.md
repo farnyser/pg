@@ -3,6 +3,11 @@ C++ PlayGround
 
 Just a little C++ fun
 
+Data Locality
+-------------
+
+Explode object into sub-component when using collection of object
+
 Neural Network
 --------------
 
