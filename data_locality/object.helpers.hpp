@@ -10,7 +10,7 @@
 #define _MAP_NAME() MAP_NAME
 
 #define var(i, A) auto& A() { return get<i>(); };
-#define names(...) struct Index { enum { __VA_ARGS__ }; }; EVAL2(MAP_NAME(var, 0, __VA_ARGS__))
+#define names(...) struct Index { enum { __VA_ARGS__ }; }; EVAL256(MAP_NAME(var, 0, __VA_ARGS__))
 
 #define declare_object(NAME, a, b) \
 	namespace pg { \

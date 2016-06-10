@@ -6,8 +6,8 @@
 #include "object.hpp"
 #include "object.helpers.hpp"
 
-// Create a kind-of struct Point { double X; double Y; };
-declare_object(Point, (X, Y), (double, double));
+// Create a kind-of struct Point { double X; double Y; std::string Name; };
+declare_object(Point, (X, Y, Name), (double, double, std::string));
 
 // Create a kind-of struct Circle { Point Center; double Radius; };
 declare_object(Circle, (Center, Radius), (Point, double));
@@ -17,13 +17,13 @@ using pg::object::Collection;
 void print_circle(auto& circle) 
 {
 	std::cout << "Circle radius => " << circle.Radius() << std::endl;
-	std::cout << "Circle center => (" << circle.Center().X() << ", " << circle.Center().Y() << ")" << std::endl;
+	std::cout << "Circle center => (" << circle.Center().Name() << ": " << circle.Center().X() << ", " << circle.Center().Y() << ")" << std::endl;
 }
 
 int main(int argc, char *argv[])
 {
 	// Create a single object..
-	Circle c(Point{0, 3}, 5);
+	Circle c(Point{0, 3, "A"}, 5);
 
 	// Or a collection..
 	Collection<Circle> circles;
@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 	{
 		Circle circle;
 		circle.Radius() = (int)(std::rand() * 10.0 / RAND_MAX);
+		circle.Center().Name() = 'A' + (int)(std::rand() * 25.0 / RAND_MAX);
 		circle.Center().X() = (int)(std::rand() * 100.0 / RAND_MAX);
 		circle.Center().Y() = (int)(std::rand() * 100.0 / RAND_MAX);
 		circles.push_back(circle);
