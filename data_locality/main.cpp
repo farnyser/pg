@@ -1,3 +1,4 @@
+// Should be compiled with a C++14 compatible compiler
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -5,8 +6,11 @@
 #include "object.hpp"
 #include "object.helpers.hpp"
 
-declare_object(Point, (X, Y), (double, double))
-declare_object(Circle, (Center, Radius), (Point, double))
+// Create a kind-of struct Point { double X; double Y; };
+declare_object(Point, (X, Y), (double, double));
+
+// Create a kind-of struct Circle { Point Center; double Radius; };
+declare_object(Circle, (Center, Radius), (Point, double));
 
 using pg::object::Collection;
 
