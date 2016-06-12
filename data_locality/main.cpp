@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		circles.push_back(circle);
 	}
 	
-	// print small circles
+	std::cout << "Print small circles using optimized memory layout" << std::endl;
 	for(int i = 0; i < 10; ++i)
 	{
 		// NB: 
@@ -50,5 +50,12 @@ int main(int argc, char *argv[])
 			print_circle(circles[i]);
 	}
 	
+	std::cout << "Print large circles using wrapper (pseudo object)" << std::endl;
+	for(auto w : circles)
+	{
+		if(w.Radius() >= 5)
+			print_circle(w);
+	}
+
 	return EXIT_SUCCESS;
 };

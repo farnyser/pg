@@ -123,6 +123,15 @@ namespace object
 			return wrappers[i];
 		}
 		
+		auto begin() { return wrappers.begin(); }
+		auto begin() const { return wrappers.begin(); }
+		auto rbegin() { return wrappers.rbegin(); }
+		auto rbegin() const { return wrappers.rbegin(); }
+		auto end() { return wrappers.end(); }
+		auto end() const { return wrappers.end(); }
+		auto rend() { return wrappers.rend(); }
+		auto rend() const { return wrappers.rend(); }
+		
 		void push_back(const T& t) {
 			for_each_in_tuple_pair([](auto &cl, auto& td) { cl.push_back(td); }, data, t.data);
 			
