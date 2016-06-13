@@ -18,8 +18,9 @@ struct Point
 	double y;
 	std::string name;
 }
-```
+
 using Points = std::vector<Point>;
+```
 	
 These three elements are next to each other in memory. This is optimized for when you need to work on a Point has a whole element (like serialization). 
 
@@ -68,3 +69,14 @@ Wrapper<Point> wrapper(points[0]);
 ```C++
 declare_object(Point, (X, Y, Name), (double, double, std::string));
 ```
+
+Benchmark
+---------
+
+On my i7-3517U laptop, compiled with gcc v5.3.0: `g++ bench.cpp -Wall -march=core-avx-i -Wpsabi -std=c++14 -O3`, this is what I get:
+
+|                                         | vector<Circle> | Collection<Circle> |
+|-----------------------------------------|----------------|--------------------|
+| Simple access to one component (X)      | 23ms           | 5ms                |
+| Range computation using X, Y and Radius | 27ms           | 11ms               |
+
