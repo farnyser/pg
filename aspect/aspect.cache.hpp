@@ -1,16 +1,15 @@
 #ifndef __ASPECT_CACHE_HPP__
 #define __ASPECT_CACHE_HPP__
 
+#include <thread>
+#include <mutex>
+
 #include "aspect.hpp"
 
 namespace pg
 {
 	namespace aspect
 	{
-		// keep call stack for dependency detection
-		// will have to change for thread safety
-		std::stack<std::function<void()>> invalidator_stack;
-
 		/*
 			Reactors
 		*/
@@ -19,6 +18,9 @@ namespace pg
 		auto& reactors()
 		{
 			static std::vector<F> reactors;
+			static std::mutex mutex;
+
+			std::lock_guard<std::mutex> guard(mutex);
 			return reactors;
 		}
 
@@ -31,8 +33,14 @@ namespace pg
 		template <typename T, typename F>
 		void add_reactor(F f)
 		{
+			static std::mutex mutex;
 			auto function {make_function(f)};
-			reactors<T, decltype(function)>().push_back(function);
+			auto& list = reactors<T, decltype(function)>();
+
+			{
+				std::lock_guard<std::mutex> guard(mutex);
+				list.push_back(function);
+			}
 		}
 
 		template <typename INAME, typename... ARGS>
@@ -45,19 +53,36 @@ namespace pg
 		/*
 			invalidators
 		*/
+		auto& invalidators_stack()
+		{
+			static std::map<std::thread::id, std::stack<std::function<void()>>> stack;
+			static std::mutex mutex;
+
+			std::lock_guard<std::mutex> guard(mutex);
+			return stack[std::this_thread::get_id()];
+		}
 
 		template <typename T, typename... ARGS>
 		auto& invalidators(ARGS... args)
 		{
 			static std::map<std::tuple<ARGS...>, std::vector<std::function<void()>>> invalidators;
+			static std::mutex mutex;
+
+			std::lock_guard<std::mutex> guard(mutex);
 			return invalidators[std::make_tuple(args...)];
 		}
 
 		template <typename T, typename... ARGS, typename F>
 		void add_invalidator(F f, ARGS... args)
 		{
+			static std::mutex mutex;
 			auto function = make_function(f);
-			invalidators<T>(args...).push_back(function);
+			auto& list = invalidators<T>(args...);
+
+			{
+				std::lock_guard<std::mutex> guard(mutex);
+				list.push_back(function);
+			}
 		}
 
 		template <typename INAME, typename... ARGS>
@@ -75,32 +100,43 @@ namespace pg
 		auto validity_map_key(const std::tuple<ARGS...>& key)
 		{
 			static std::map<std::tuple<ARGS...>, bool> validity;
+			static std::mutex mutex;
 
 			struct Wrapper
 			{
+				std::mutex& mutex;
 				const std::tuple<ARGS...> key;
 
-				Wrapper(const std::tuple<ARGS...>& k) : key(k)
+				Wrapper(std::mutex& m, const std::tuple<ARGS...>& k)
+					: mutex(m), key(k)
 				{
 				}
 
 				Wrapper& operator=(bool v)
 				{
-					auto& target = validity[key];
-					if(target)
+					bool old_value = false;
+
+					{
+						std::lock_guard<std::mutex> guard(mutex);
+						auto& value = validity[key];
+						old_value = value;
+						value = v;
+					}
+
+					if(old_value)
 						apply(&invalidate<T, ARGS...>, key);
 
-					target = v;
 					return *this;
 				}
 
 				operator bool()
 				{
+					std::lock_guard<std::mutex> guard(mutex);
 					return validity[key];
 				}
 			};
 
-			return Wrapper(key);
+			return Wrapper(mutex, key);
 		}
 
 		template <typename T, typename... ARGS>
@@ -117,30 +153,39 @@ namespace pg
 		auto cache_map_key(const std::tuple<ARGS...>& key)
 		{
 			static std::map<std::tuple<ARGS...>, typename INAME::function::result_type> cache;
+			static std::mutex mutex;
 
 			struct Wrapper
 			{
+				std::mutex& mutex;
 				const std::tuple<ARGS...> key;
 
-				Wrapper(const std::tuple<ARGS...>& k) : key(k)
+				Wrapper(std::mutex& m, const std::tuple<ARGS...>& k)
+					: mutex(m), key(k)
 				{
 				}
 
 				Wrapper& operator=(const typename INAME::function::result_type& v)
 				{
-					cache[key] = v;
+					{
+						std::lock_guard<std::mutex> guard(mutex);
+						cache[key] = v;
+					}
+
 					validity_map_key<INAME>(key) = true;
 					apply(&react<INAME, ARGS...>, key);
+
 					return *this;
 				}
 
 				operator typename INAME::function::result_type()
 				{
+					std::lock_guard<std::mutex> guard(mutex);
 					return cache[key];
 				}
 			};
 
-			return Wrapper(key);
+			return Wrapper(mutex, key);
 		}
 
 		template <typename T, typename... ARGS>
@@ -156,6 +201,8 @@ namespace pg
 		template <typename INAME, typename F, typename... ARGS>
 		auto cache_overload(F function, ARGS... args)
 		{
+			auto& invalidator_stack = invalidators_stack();
+
 			if(!invalidator_stack.empty()) {
 				auto inv = invalidator_stack.top();
 				add_invalidator<INAME>(inv, args...);
