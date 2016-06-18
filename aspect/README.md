@@ -10,13 +10,13 @@ How can this be done ?
 -------------------
 
 Using aspect-oriented programming, its possible to inject code to be executed before/after other function calls.  
-In C++ world, it's impossible to do for raw-function unless using some external pre-compiler tools. 
+In C++ world, it's impossible to do for raw-function unless using some external pre-compiler tools.
 However, we can play around with std::function.
 
 Function overloading
 --------------------
 
-A simple way to achieve a form of AOP is to use function composition. 
+A simple way to achieve a form of AOP is to use function composition.
 If you take `f(x)` and want to add some `g()` behavior before every call to `f`, we can create a new function `h(x) = g() then f(x)`.
 If you want that to be the new default behavior when calling `f`, it's just a matter of naming/overloading: `f(x) = g() then f_old(x)`.
 Of course you can achieve 'after' or 'around' call the same way as this 'before' example.
@@ -36,7 +36,7 @@ That's why we use IoC and resolve the `load` function using only it's identifier
 Implementation helpers
 ----------------------
 
-Declare the interface: 
+Declare the interface:
 
 ```C++
 aspect_resolvable(ISquare, int(int));
@@ -45,26 +45,26 @@ aspect_resolvable(ISquare, int(int));
 Register an implementation:
 
 ```C++
-overload<ISquare>([](int x) { return x * x; }); 
+overload<ISquare>([](int x) { return x * x; });
 ```
 
-Call it: 
+Call it:
 
 ```C+++
 call<ISquare>(5);
 ```
 
-Register an overload for a specific interface: 
+Register an overload for a specific interface:
 
 ```C++
-overload<ISquare>([](const ISquare::function& function, int x) 
-{ 
+overload<ISquare>([](const ISquare::function& function, int x)
+{
 	// overload with logging
 	std::cout << ISquare::Name << std::endl;
-	
+
 	// call existing implementation
 	return function(x);
-}); 
+});
 ```
 
 Register a before or after call:
@@ -87,6 +87,7 @@ cached<ISquare>();
 But the best example imho is fibonacci:
 
 ```C+++
+overload<IFibo>([](int n) { return call<IFibo>(n-2) + call<IFibo>(n-1); });
 cached<IFibo>();
 cached<IFibo>(0) = 0;
 cached<IFibo>(1) = 1;
@@ -95,7 +96,7 @@ cached<IFibo>(1) = 1;
 You can also add reactors (callback that'll be called whenever a new value is added to the cache):
 
 ```C++
-add_reactor<IFibo>([](int n) { 
+add_reactor<IFibo>([](int n) {
 	std::cout << "IFibo(" << n << ") has changed" << std::endl;
 });
 ```

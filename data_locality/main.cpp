@@ -14,11 +14,11 @@ declare_object(Circle, (Center, Radius), (Point, double));
 
 using pg::object::Collection;
 
-void print_circle(auto& circle) 
+auto print_circle = [](auto& circle)
 {
 	std::cout << "Circle radius => " << circle.Radius() << std::endl;
 	std::cout << "Circle center => (" << circle.Center().Name() << ": " << circle.Center().X() << ", " << circle.Center().Y() << ")" << std::endl;
-}
+};
 
 int main(int argc, char *argv[])
 {
@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
 
 	// Or a collection..
 	Collection<Circle> circles;
-	
+
 	// Generate some data
-	for(int i = 0; i < 10; ++i) 
+	for(int i = 0; i < 10; ++i)
 	{
 		Circle circle;
 		circle.Radius() = (int)(std::rand() * 10.0 / RAND_MAX);
@@ -38,18 +38,18 @@ int main(int argc, char *argv[])
 		circle.Center().Y() = (int)(std::rand() * 100.0 / RAND_MAX);
 		circles.push_back(circle);
 	}
-	
+
 	std::cout << "Print small circles using optimized memory layout" << std::endl;
 	for(int i = 0; i < 10; ++i)
 	{
-		// NB: 
+		// NB:
 		// we are using circles.Radius()[i]
 		// instead of classical circles[i].Radius()
 		// because all radius are in a vector
 		if(circles.Radius()[i] < 5)
 			print_circle(circles[i]);
 	}
-	
+
 	std::cout << "Print large circles using wrapper (pseudo object)" << std::endl;
 	for(auto w : circles)
 	{

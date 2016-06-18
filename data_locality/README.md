@@ -4,7 +4,7 @@ Data Locality
 Summary
 -------
 
-Object Oriented Programming with cache efficient data layout. 
+Object Oriented Programming with cache efficient data layout.
 
 What's the problem ?
 --------------------
@@ -12,7 +12,7 @@ What's the problem ?
 Let's use a simple example of a Point. If we want to put a point on a surface, we need it's coordinates, and maybe even a name or something. Maybe we'll go crazy and put several point in there.
 
 ```C++
-struct Point 
+struct Point
 {
 	double x;
 	double y;
@@ -21,10 +21,10 @@ struct Point
 
 using Points = std::vector<Point>;
 ```
-	
-These three elements are next to each other in memory. This is optimized for when you need to work on a Point has a whole element (like serialization). 
 
-However, often that's not the main scenario. Actualy, most of the time we work on each sub-element independently. 
+These three elements are next to each other in memory. This is optimized for when you need to work on a Point has a whole element (like serialization).
+
+However, often that's not the main scenario. Actualy, most of the time we work on each sub-element independently.
 
 So, what would be the most efficient memory layout to sort Point based on their X coordinate ?
 
@@ -35,7 +35,7 @@ If we store each element independently, we can play with memory and do whatever 
 What happen if we replace our Points collection with three collections ? (One per component).
 
 ```C++
-struct Points 
+struct Points
 {
 	std::vector<double> x;
 	std::vector<double> y;
@@ -43,19 +43,19 @@ struct Points
 }
 ```
 
-What happen is that we get better performance when working on a single component. Finding the point with the lower X can be 2 or 3 times faster than with the unoptimized classical layout. 
+What happen is that we get better performance when working on a single component. Finding the point with the lower X can be 2 or 3 times faster than with the unoptimized classical layout.
 
 But it's getting hard to use.
 
 Proposed solution
 -----------------
 
-Using some template and macro magic, we can have a nicer interface. 
-A macro `declare_object` is used to declare and implement all the struct we need for a given type. 
+Using some template and macro magic, we can have a nicer interface.
+A macro `declare_object` is used to declare and implement all the struct we need for a given type.
 The three structs are:
 
 ```C++
-Point point; 
+Point point;
 Collection<Point> points;
 Wrapper<Point> wrapper(points[0]);
 ```
@@ -80,3 +80,4 @@ On my i7-3517U laptop, compiled with gcc v5.3.0: `g++ bench.cpp -Wall -march=cor
 | Simple access to one component (X)      | 23ms           | 5ms                |
 | Range computation using X, Y and Radius | 27ms           | 11ms               |
 
+Similar result have been observed with clang 3.8
