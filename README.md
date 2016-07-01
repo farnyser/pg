@@ -28,7 +28,7 @@ Dynamic Data Holder
 
 Class helper to create POD-like object with runtime defined attributes
 
-Sort
-----
+Algorithms
+----------
 
-Some sorting algorithm implementation
+Some algorithm implementation (sorting, heap..)
