@@ -1,7 +1,8 @@
 #ifndef __PG_GA__
 #define __PG_GA__
 
-#include "ioc/ioc.hpp"
+#include "aspect/aspect.hpp"
+#include "aspect/aspect.helpers.hpp"
 #include <random>
 #include <functional>
 #include <cstdlib>
@@ -25,67 +26,67 @@ namespace pg
 		using world = std::vector<creature<T>>;
 
 		template<typename T>
-		resolvable(IEvaluate, double(const creature<T>&));
+		aspect_resolvable(IEvaluate, double(const creature<T>&));
 
 		template<typename T>
-		resolvable(ISelectBest, double(const creature<T>&));
+		aspect_resolvable(ISelectBest, double(const creature<T>&));
 
 		template<typename T>
-		resolvable(ISelectWorst, double(const creature<T>&));
+		aspect_resolvable(ISelectWorst, double(const creature<T>&));
 
 		template<typename T>
-		resolvable(ISelectRandom, double(const creature<T>&));
+		aspect_resolvable(ISelectRandom, double(const creature<T>&));
 
 		template<typename T>
-		resolvable(IMutate, creature<T>(const creature<T>&));
+		aspect_resolvable(IMutate, creature<T>(const creature<T>&));
 
 		template<typename T>
-		resolvable(IMerge, creature<T>(const creature<T>&, const creature<T>&));
+		aspect_resolvable(IMerge, creature<T>(const creature<T>&, const creature<T>&));
 
 		template<typename T>
-		resolvable(IGenerate, creature<T>());
+		aspect_resolvable(IGenerate, creature<T>());
 
 		template<typename T>
-		resolvable(IGenerateWorld, world<T>());
+		aspect_resolvable(IGenerateWorld, world<T>());
 
 		template<typename T>
-		resolvable(IEndOfTheWorld, bool(world<T>&));
+		aspect_resolvable(IEndOfTheWorld, bool(world<T>&));
 
 		template<typename T>
-		resolvable(IEvolve, void(world<T>&));
+		aspect_resolvable(IEvolve, void(world<T>&));
 
 		template<typename T>
-		resolvable(IReproduce, void(world<T>&));
+		aspect_resolvable(IReproduce, void(world<T>&));
 
 		template<typename T>
-		resolvable(IKill, void(world<T>&));
+		aspect_resolvable(IKill, void(world<T>&));
 
 		template<typename T>
-		resolvable(IAge, void(world<T>&));
+		aspect_resolvable(IAge, void(world<T>&));
 
 		template<typename T>
-		resolvable(ILifeCycle, world<T>());
+		aspect_resolvable(ILifeCycle, world<T>());
 
 		template<typename T>
-		resolvable(ISelect, typename world<T>::iterator(world<T>&, const typename IEvaluate<T>::function&));
+		aspect_resolvable(ISelect, typename world<T>::iterator(world<T>&, const typename IEvaluate<T>::function&));
 
 		template<typename T>
-		resolvable(IRandom, typename world<T>::iterator(world<T>&, const typename IEvaluate<T>::function&));
+		aspect_resolvable(IRandom, typename world<T>::iterator(world<T>&, const typename IEvaluate<T>::function&));
 
 		template<typename T>
-		resolvable(IRand, double(double, double));
+		aspect_resolvable(IRand, double(double, double));
 
 		template<typename T>
-		resolvable(IGetInitialWorldSize, int());
+		aspect_resolvable(IGetInitialWorldSize, int());
 
 		template<typename T>
-		resolvable(IGetReproductionRate, double());
+		aspect_resolvable(IGetReproductionRate, double());
 
 		template<typename T>
-		resolvable(IGetKillRate, double());
+		aspect_resolvable(IGetKillRate, double());
 
 		template<typename T>
-		resolvable(IGetMutateRate, double());
+		aspect_resolvable(IGetMutateRate, double());
 	};
 }
 
@@ -93,7 +94,7 @@ template<typename T>
 pg::ga::creature<T>::creature(const T& value)
  : age(0), value(value)
 {
-	fitness = resolve(IEvaluate<T>)(*this);
+	fitness = pg::aspect::call<IEvaluate<T>>(*this);
 }
 
 #include "ga.default.hpp"

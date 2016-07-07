@@ -15,20 +15,19 @@
 		{ \
 		public: \
 			typedef std::function< SIGNATURE > function; \
-			static std::string Name; \
-		}; \
-		std::string INAME::Name { #INAME }
+			static std::string Name() { return #INAME; }; \
+		};
 
 	#define aspect_before(IMPL) \
 		{ pg::aspect::overload<IBefore>([function](const std::string& name) IMPL); }
-	
+
 	#define aspect_after(IMPL) \
 		{ pg::aspect::overload<IAfter>([function](const std::string& name) IMPL); }
-	
+
 	#define aspect_register(INAME, IMPL) \
 		{ typename INAME::function function = pg::aspect::ioc<INAME>(); pg::aspect::ioc<INAME>() = [&, function] IMPL; }
-	
+
 	#define aspect_extends(INAME, IBASE) \
 		{ typename IBASE::function function = pg::aspect::ioc<IBASE>(); pg::aspect::ioc<INAME>() = function; }
-	
+
 #endif

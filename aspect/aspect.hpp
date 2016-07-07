@@ -52,9 +52,8 @@ namespace pg
 		struct IBefore
 		{
 			typedef std::function<void(const std::string&)> function;
-			static std::string Name;
+			static std::string Name() { return "IBefore"; };
 		};
-		std::string IBefore::Name { "IBefore" };
 
 		template <>
 		typename IBefore::function& ioc<IBefore>()
@@ -76,9 +75,8 @@ namespace pg
 		struct IAfter
 		{
 			typedef std::function<void(const std::string&)> function;
-			static std::string Name;
+			static std::string Name(){ return "IAfter"; };
 		};
-		std::string IAfter::Name { "IAfter" };
 
 		template <>
 		typename IAfter::function& ioc<IAfter>()
@@ -98,13 +96,15 @@ namespace pg
 		*/
 
 		template <typename T, typename... ARGS>
-		decltype(auto) call(ARGS... args)
+		typename T::function::result_type call(ARGS&&... args)
 		{
-			ioc<IBefore>()(T::Name);
-			decltype(auto) result = ioc<T>()(args...);
-			ioc<IAfter>()(T::Name);
+			struct Callback {
+				Callback() { ioc<IBefore>()(T::Name()); }
+				~Callback() { ioc<IAfter>()(T::Name()); }
+			};
 
-			return result;
+			Callback scope;
+			return ioc<T>()(std::forward<ARGS>(args)...);
 		}
 	}
 }
