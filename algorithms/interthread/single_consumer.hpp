@@ -1,5 +1,5 @@
-#ifndef __SINGLE_CONSULER_HPP__
-#define __SINGLE_CONSULER_HPP__
+#ifndef __SINGLE_CONSUMER_HPP__
+#define __SINGLE_CONSUMER_HPP__
 
 namespace pg 
 {
