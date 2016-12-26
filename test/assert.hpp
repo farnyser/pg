@@ -18,7 +18,7 @@ void assertEquals(T1 t1, T2 t2)
 }
 
 template <typename T, typename F>
-auto time(F f)
+double time(F f)
 {
 	auto start = std::chrono::steady_clock::now();
 	
@@ -54,15 +54,18 @@ void test(const std::string& name, F f, double showDuration = 5, std::ostream& o
 	}	
 }
 
+struct latency_node { unsigned long id; double time; };
+
+
 template <typename F, typename T = std::micro> 
 auto latency(F f, unsigned long count, std::ostream& os = std::cout)
 {
 	// 99.9th percentile
 	auto limit = count / 100;
-	
-	struct node { unsigned long id; double time; };
-	auto cmp = [](const node& a, const node& b) { return b.time < a.time; };
-	std::priority_queue<node, std::vector<node>, decltype(cmp)> times(cmp);
+	if(limit == 0) limit++;
+		
+	auto cmp = [](const latency_node& a, const latency_node& b) { return b.time < a.time; };
+	std::priority_queue<latency_node, std::vector<latency_node>, decltype(cmp)> times(cmp);
 	
 	for(unsigned long i = 0; i < count ; i++)
 	{
@@ -74,6 +77,6 @@ auto latency(F f, unsigned long count, std::ostream& os = std::cout)
 		if(times.size() > limit)
 			times.pop();
 	}
-	
-	return times.top().time;
+
+	return times.empty() ? 0 : times.top().time;
 }

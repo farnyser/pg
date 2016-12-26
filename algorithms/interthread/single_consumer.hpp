@@ -15,8 +15,8 @@ namespace pg
 				class Publisher
 				{ 
 					private:
-						std::atomic<unsigned long> read, write;
-						unsigned long r, w;
+						std::atomic<unsigned long> read{0}, write{0};
+						unsigned long r{0}, w{0};
 						std::array<T, SIZE> buffer;
 					
 					public:
@@ -45,7 +45,7 @@ namespace pg
 				
 				template <typename F>
 				bool try_consume(F f) {
-					while(true) {
+					for(size_t i = 0; i < PRODUCER_COUNT; i++) {
 						auto&p = Publisher[rp++ % PRODUCER_COUNT];
 						if(p.try_consume(f))
 							return true;
