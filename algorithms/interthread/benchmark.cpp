@@ -6,8 +6,8 @@
 #include "multiple_consumer.hpp"
 #include "queue_lock.hpp"
 
-#define EVENT_COUNT 200000
-
+#define EVENT_COUNT 2000000
+#define BUFFER_SIZE 2048*2
 struct Event 
 {
 	int id;
@@ -23,7 +23,7 @@ auto consume(T& buffer, size_t count)
 		while(!buffer.try_consume([&](Event& e) {
 			sum_id += e.id;
 		}));
-	}, count);
+	}, count, 99.9);
 	
 	return std::make_pair(l, sum_id);
 }
@@ -38,7 +38,7 @@ auto produce(T& buffer, size_t count)
 			e.id = i;
 			i++;
 		}));
-	}, count);
+	}, count, 99.9);
 	
 	return l;
 }
@@ -78,12 +78,12 @@ int main()
 	});
 			
 	test("Single Consumer", [](){ 
-		pg::lockfree::SingleConsumer<Event, 4096, 1> buffer;
+		pg::lockfree::SingleConsumer<Event, BUFFER_SIZE, 1> buffer;
 		run_test(EVENT_COUNT, {&buffer}, {&buffer.Publisher[0]}); 
 	});
 
 	test("Multiple Consumer", [](){ 
-		pg::lockfree::MultipleConsumer<Event, 4096, 1, 1> buffer;
+		pg::lockfree::MultipleConsumer<Event, BUFFER_SIZE, 1, 1> buffer;
 		run_test(EVENT_COUNT, {&buffer.Consumer[0]}, {&buffer.Publisher[0]}); 
 	});
 
@@ -96,12 +96,12 @@ int main()
 	});
 	
 	test("Single Consumer", [](){ 
-		pg::lockfree::SingleConsumer<Event, 4096, 2> buffer;
+		pg::lockfree::SingleConsumer<Event, BUFFER_SIZE, 2> buffer;
 		run_test(EVENT_COUNT/2, {&buffer}, {&buffer.Publisher[0], &buffer.Publisher[1]}); 
 	});
 	
 	test("Multiple Consumer", [](){ 
-		pg::lockfree::MultipleConsumer<Event, 4096, 2, 1> buffer;
+		pg::lockfree::MultipleConsumer<Event, BUFFER_SIZE, 2, 1> buffer;
 		run_test(EVENT_COUNT/2, {&buffer.Consumer[0]}, {&buffer.Publisher[0], &buffer.Publisher[1]}); 
 	});
 
@@ -114,12 +114,12 @@ int main()
 	});
 	
 	test("Single Consumer", [](){ 
-		pg::lockfree::SingleConsumer<Event, 4096, 4> buffer;
+		pg::lockfree::SingleConsumer<Event, BUFFER_SIZE, 4> buffer;
 		run_test(EVENT_COUNT/4, {&buffer}, {&buffer.Publisher[0], &buffer.Publisher[1], &buffer.Publisher[2], &buffer.Publisher[3]}); 
 	});
 	
 	test("Multiple Consumer", [](){ 
-		pg::lockfree::MultipleConsumer<Event, 4096, 4, 1> buffer;
+		pg::lockfree::MultipleConsumer<Event, BUFFER_SIZE, 4, 1> buffer;
 		run_test(EVENT_COUNT/4, {&buffer.Consumer[0]}, {&buffer.Publisher[0], &buffer.Publisher[1], &buffer.Publisher[2], &buffer.Publisher[3]}); 
 	});
 
@@ -127,7 +127,7 @@ int main()
 	std::cout << "=== 2 READERS & 1 PRODUCER ===" << std::endl;
 		
 	test("Multiple Consumer", [](){ 
-		pg::lockfree::MultipleConsumer<Event, 4096, 1, 2> buffer;
+		pg::lockfree::MultipleConsumer<Event, BUFFER_SIZE, 1, 2> buffer;
 		run_test(EVENT_COUNT, {&buffer.Consumer[0], &buffer.Consumer[1]}, {&buffer.Publisher[0]}); 
 	});
 	
@@ -135,7 +135,7 @@ int main()
 	std::cout << "=== 2 READERS & 2 PRODUCERS ===" << std::endl;
 	
 	test("Multiple Consumer", [](){ 
-		pg::lockfree::MultipleConsumer<Event, 4096, 2, 2> buffer;
+		pg::lockfree::MultipleConsumer<Event, BUFFER_SIZE, 2, 2> buffer;
 		run_test(EVENT_COUNT/2, {&buffer.Consumer[0], &buffer.Consumer[1]}, {&buffer.Publisher[0], &buffer.Publisher[1]}); 
 	});
 

@@ -18,7 +18,8 @@ namespace pg
 						size_t id;
 						std::atomic<unsigned long> write;
 						unsigned long w;
-						std::array<T, SIZE> buffer;
+						std::unique_ptr<std::array<T, SIZE>> buffer_ptr;
+						std::array<T, SIZE>& buffer;
 						
 						void init(MultipleConsumer* s, size_t i) 
 						{
@@ -29,6 +30,8 @@ namespace pg
 						}
 						
 					public:
+						Publisher() : buffer_ptr(new std::array<T, SIZE>()), buffer(*buffer_ptr) {
+						}
 					
 						unsigned long min_read() {
 							unsigned long min = -1;

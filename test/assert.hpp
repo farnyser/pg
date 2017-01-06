@@ -58,10 +58,9 @@ struct latency_node { unsigned long id; double time; };
 
 
 template <typename F, typename T = std::micro> 
-auto latency(F f, unsigned long count, std::ostream& os = std::cout)
+auto latency(F f, unsigned long count, double percentile = 99.9, std::ostream& os = std::cout)
 {
-	// 99.9th percentile
-	auto limit = count / 100;
+	auto limit = count * (100.0 - percentile) / 100.0;
 	if(limit == 0) limit++;
 		
 	auto cmp = [](const latency_node& a, const latency_node& b) { return b.time < a.time; };

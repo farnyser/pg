@@ -17,9 +17,13 @@ namespace pg
 					private:
 						std::atomic<unsigned long> read{0}, write{0};
 						unsigned long r{0}, w{0};
-						std::array<T, SIZE> buffer;
-					
+						std::unique_ptr<std::array<T, SIZE>> buffer_ptr;
+						std::array<T, SIZE>& buffer;
+						
 					public:
+						Publisher() : buffer_ptr(new std::array<T, SIZE>()), buffer(*buffer_ptr) {
+						}
+					
 						template <typename F>
 						bool try_consume(F f) {
 							if(r < write) {
