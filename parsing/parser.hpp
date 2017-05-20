@@ -92,6 +92,16 @@ namespace pg
 		};
 
 		template <typename P>
+		class Optional 
+		{
+			public:
+				static ParsingResult Parse(const std::string& input)
+				{
+					return Or<P, SuccessParser>::Parse(input);
+				}
+		};
+
+		template <typename P>
 		class Many 
 		{
 			public:
@@ -116,6 +126,30 @@ namespace pg
 
 					return ParsingError{};
 				};
+		};
+
+		template <typename P>
+		class ManyOrNone
+		{
+			public:
+				static ParsingResult Parse(const std::string& input)
+				{
+					return Optional<Many<P>>::Parse(input);
+				}
+		};
+
+		template <typename P>
+		class Ignore
+		{
+			public:
+				static ParsingResult Parse(const std::string& input)
+				{
+					auto result = P::Parse(input);
+					if(result.Success.HasValue())
+						return ParsingSuccess{"", result.Success->Remaining};
+
+					return ParsingError{};
+				}
 		};
 	}
 } 
