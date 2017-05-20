@@ -2,7 +2,6 @@
 #include "../test/assert.hpp"
 #include "parser.hpp"
 
-using namespace pg;
 using namespace pg::parsing;
 
 template <char c>
@@ -37,6 +36,7 @@ int main()
 				ParseChar<'c'>>{};
 
 	auto cc = And<CharRange<'a', 'z'>, decltype(c)>{};
+	auto mx = Many<ParseChar<'x'>>{};
 
 	assertEquals(ParseChar<'x'>::Parse("xab").Success.HasValue(), true);
 	assertEquals(ParseChar<'x'>::Parse("ab").Success.HasValue(), false);
@@ -45,6 +45,10 @@ int main()
 	assertEquals(decltype(cc)::Parse("bab").Success.HasValue(), true);
 	assertEquals(decltype(cc)::Parse("bxab").Success.HasValue(), false);
 	assertEquals(decltype(cc)::Parse("xbab").Success.HasValue(), true);
+	assertEquals(decltype(mx)::Parse("xbab").Success.HasValue(), true);
+	assertEquals(decltype(mx)::Parse("bab").Success.HasValue(), false);
+	assertEquals(decltype(mx)::Parse("xxxxbab").Success.HasValue(), true);
+	assertEquals(decltype(mx)::Parse("xxxxbab").Success->Remaining, "bab");
 
 	return EXIT_SUCCESS;
 }

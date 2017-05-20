@@ -3,6 +3,7 @@
 
 #include <string>
 #include <stdexcept>
+#include "optional.hpp"
 
 namespace pg
 {
@@ -15,37 +16,10 @@ namespace pg
 		};
 
 		struct ParsingError {};
-
-		template <typename T>
-		class Optional 
-		{
-			T value;
-			bool has_value;
-
-			public:
-			Optional() : has_value(false) {}
-			Optional(T&& value) : value(value), has_value(true) {}
-
-			T& Value()
-			{
-				if(!has_value)
-					throw std::runtime_error("Optional has no value!");
-
-				return value;
-			}
-
-			const T& Value() const 
-			{
-				return const_cast<Optional<T*>>(this)->Value;
-			}
-
-			bool HasValue() const noexcept { return has_value; }
-		};
-
 		struct ParsingResult 
 		{
-			Optional<ParsingSuccess> Success;
-			Optional<ParsingError> Error;
+			utils::Optional<ParsingSuccess> Success;
+			utils::Optional<ParsingError> Error;
 
 			ParsingResult(ParsingSuccess&& s) : Success(std::move(s)) {}
 			ParsingResult(ParsingError&& e) : Error(std::move(e)) {}
@@ -97,10 +71,7 @@ namespace pg
 				static ParsingResult InternalParse(const std::string& input)
 				{
 					auto result = T::Parse(input);
-					if (result.Error.HasValue())
-						return ParsingError{};
-
-					if constexpr(std::is_same<T, SuccessParser>::value)
+					if (result.Error.HasValue() || std::is_same<T, SuccessParser>::value)
 						return result;
 
 					auto remaining = InternalParse<OTHERS...>(result.Success.Value().Remaining);
@@ -108,8 +79,8 @@ namespace pg
 						return ParsingError{};
 
 					return ParsingSuccess { 
-						result.Success.Value().Content + remaining.Success.Value().Content, 
-						remaining.Success.Value().Remaining 
+						result.Success->Content + remaining.Success->Content, 
+						remaining.Success->Remaining 
 					};
 				}
 
@@ -117,6 +88,33 @@ namespace pg
 				static ParsingResult Parse(const std::string& input) 
 				{
 					return InternalParse<ARGS...>(input);
+				};
+		};
+
+		template <typename P>
+		class Many 
+		{
+			public:
+				static ParsingResult Parse(const std::string& input) 
+				{
+					bool success = false;
+					std::string matched, remaining;
+
+					while(true) 
+					{
+						auto result = P::Parse(success ? remaining : input);
+						if (result.Error.HasValue())
+							break;
+						
+						matched += result.Success->Content;
+						remaining = result.Success->Remaining;
+						success = true;
+					}
+
+					if(success)
+						return ParsingSuccess{matched, remaining};
+
+					return ParsingError{};
 				};
 		};
 	}
