@@ -1,32 +1,9 @@
 #include <cstdlib>
 #include "../test/assert.hpp"
 #include "parser.hpp"
+#include "parser.basics.hpp"
 
 using namespace pg::parsing;
-
-template <char c>
-struct Char
-{
-	static ParsingResult Parse(const std::string& in) 
-	{
-		if(in.length() == 0 || in[0] != c)
-			return ParsingError{};
-
-		return ParsingSuccess{std::string{} + c, in.substr(1)};
-	}
-};
-
-template <char s, char e>
-struct CharRange
-{
-	static ParsingResult Parse(const std::string& in) 
-	{
-		if(in.length() == 0 || (in[0] < s | in[0] > e))
-			return ParsingError{};
-
-		return ParsingSuccess{std::string{} + in[0], in.substr(1)};
-	}
-};
 
 using ws = ManyOrNone<Or<Char<' '>, Char<'\t'>, Char<'\r'>, Char<'\n'>>>;
 using digit = Many<CharRange<'0', '9'>>;
@@ -37,6 +14,12 @@ using decimal = And<Ignore<ws>,
 		       >>, Optional<And<Or<Char<'e'>, Char<'E'>>, digit>>>;
 				
 using integer = And<Ignore<ws>, digit>;
+
+using quoted = 	And<
+					Ignore<Char<'"'>>,
+					ManyOrNone<Or<And<Ignore<Char<'\\'>>, Char<'"'>>, NotChar<'"'>>>, 
+					Ignore<Char<'"'>>
+				>;
 
 int main()
 {
@@ -70,6 +53,10 @@ int main()
 	assertEquals(integer::Parse("		912.33").Success->Content, "912");
 	assertEquals(decimal::Parse("		912.33").Success->Content, "912.33");
 	assertEquals(decimal::Parse("		912.33e12").Success->Content, "912.33e12");
+	
+	assertEquals(quoted::Parse("\"\"").Success->Content, "");
+	assertEquals(quoted::Parse("\"hello\"").Success->Content, "hello");
+	assertEquals(quoted::Parse("\"hi \\\"world\\\"\"").Success->Content, "hi \"world\"");
 
 	return EXIT_SUCCESS;
 }
