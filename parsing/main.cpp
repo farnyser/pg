@@ -20,6 +20,18 @@ using quoted = 	And<
 					ManyOrNone<Or<And<Ignore<Char<'\\'>>, Char<'"'>>, NotChar<'"'>>>, 
 					Ignore<Char<'"'>>
 				>;
+				
+
+struct block_self;
+using block = Recurse<block_self, And<
+				Char<'{'>, 
+				ManyOrNone<
+					Or<
+						Self<block_self>,
+						NotChar<'}'>>
+					>, 
+				Char<'}'>
+			>>;
 
 int main()
 {
@@ -57,6 +69,9 @@ int main()
 	assertEquals(quoted::Parse("\"\"").Success->Content, "");
 	assertEquals(quoted::Parse("\"hello\"").Success->Content, "hello");
 	assertEquals(quoted::Parse("\"hi \\\"world\\\"\"").Success->Content, "hi \"world\"");
+	
+	assertEquals(block::Parse("{ return 1 + 2; }").Success->Content, "{ return 1 + 2; }");
+	assertEquals(block::Parse("{ if(){}; }").Success->Content, "{ if(){}; }");
 
 	return EXIT_SUCCESS;
 }

@@ -120,6 +120,36 @@ namespace pg
 					return ParsingError{};
 				}
 		};
+		
+		struct IParser
+		{
+			virtual ParsingResult ParseVirtual(const std::string& input) = 0;
+		};
+		
+		template <typename ID>
+		struct Self 
+		{
+			static IParser* self(IParser* parser = nullptr) { static auto p = parser; return p; };
+			static ParsingResult Parse(const std::string& input)
+			{
+				return self()->ParseVirtual(input);
+			}
+		};
+
+		template <typename ID, typename P>
+		struct Recurse : IParser
+		{
+			virtual ParsingResult ParseVirtual(const std::string& input)
+			{
+				return P::Parse(input);
+			}
+
+			static ParsingResult Parse(const std::string& input)
+			{
+				Self<ID>::self(new Recurse<ID, P>{});
+				return P::Parse(input);
+			}
+		};
 	}
 } 
 
