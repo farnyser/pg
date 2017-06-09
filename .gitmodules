@@ -1,0 +1,3 @@
+[submodule "parsing/example/linenoise"]
+	path = parsing/example/linenoise
+	url = https://github.com/antirez/linenoise

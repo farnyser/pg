@@ -18,7 +18,7 @@ namespace pg
 				if(in.length() == 0 || in[0] != c)
 					return ParsingError{};
 
-				return ParsingSuccess{std::string{} + c, in.substr(1)};
+				return ParsingSuccess{{std::string{} + c}, in.substr(1)};
 			}
 		};
 
@@ -30,7 +30,7 @@ namespace pg
 				if(in.length() == 0 || (in[0] < s | in[0] > e))
 					return ParsingError{};
 
-				return ParsingSuccess{std::string{} + in[0], in.substr(1)};
+				return ParsingSuccess{{std::string{} + in[0]}, in.substr(1)};
 			}
 		};
 
@@ -42,10 +42,10 @@ namespace pg
 				if(in.length() == 0 || in[0] == c)
 					return ParsingError{};
 				
-				return ParsingSuccess{std::string{} + in[0], in.substr(1)};
+				return ParsingSuccess{{std::string{} + in[0]}, in.substr(1)};
 			}
 		};
-	}
+	};
 } 
 
 #endif /* end of include guard: __PG_PARSER_BASICS_HPP__ */

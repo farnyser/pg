@@ -2,6 +2,7 @@
 #define __PG_PARSER_CORE_HPP__
 
 #include <string>
+#include <vector>
 #include "optional.hpp"
 
 namespace pg
@@ -10,8 +11,16 @@ namespace pg
 	{
 		struct ParsingSuccess 
 		{
-			std::string Content;
+			std::vector<std::string> Content;
 			std::string Remaining;
+
+			std::string Flat() const
+			{ 
+				std::string result;
+				for(auto&x : Content) 
+					result += x;
+				return result;
+			}
 		};
 
 		struct ParsingError 
@@ -39,10 +48,10 @@ namespace pg
 		{ 
 			static ParsingResult Parse(const std::string& input) 
 			{ 
-				return ParsingSuccess{"", input}; 
+				return ParsingSuccess{{}, input}; 
 			} 
 		};
-	}
+	};
 } 
 
 #endif /* end of include guard: __PG_PARSER_CORE_HPP__ */

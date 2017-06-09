@@ -1,6 +1,8 @@
 #ifndef __PG_OPTIONAL_HPP__
 #define __PG_OPTIONAL_HPP__
 
+#include <stdexcept>
+
 namespace pg 
 {
 	namespace utils
@@ -38,7 +40,7 @@ namespace pg
 
 			const T* operator->() const 
 			{
-				return const_cast<Optional<T*>>(this)->operator->();			
+				return const_cast<Optional<T>*>(this)->operator->();			
 			}
 
 			bool HasValue() const noexcept { return has_value; }

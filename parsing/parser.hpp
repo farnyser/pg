@@ -3,12 +3,12 @@
 
 #include <string>
 #include <stdexcept>
-
+#include <set>
 #include "parser.core.hpp"
 
 namespace pg
 {
-	namespace parsing
+	namespace parsing	
 	{
 		template <typename...ARGS> 
 		class Or
@@ -47,10 +47,15 @@ namespace pg
 					if (remaining.Error.HasValue())
 						return ParsingError{};
 
-					return ParsingSuccess { 
-						result.Success->Content + remaining.Success->Content, 
+					auto success = ParsingSuccess { 
+						result.Success->Content, 
 						remaining.Success->Remaining 
 					};
+
+					for(auto& x : remaining.Success->Content)
+						success.Content.push_back(x);
+
+					return success;
 				}
 
 			public: 
@@ -85,13 +90,13 @@ namespace pg
 						if (result.Error.HasValue())
 							break;
 						
-						matched += result.Success->Content;
+						matched += result.Success->Flat();
 						remaining = result.Success->Remaining;
 						success = true;
 					}
 
 					if(success)
-						return ParsingSuccess{matched, remaining};
+						return ParsingSuccess{{matched}, remaining};
 
 					return ParsingError{};
 				};
@@ -108,28 +113,33 @@ namespace pg
 		};
 
 		template <typename P>
-		class Ignore
+		struct Ignore
 		{
-			public:
-				static ParsingResult Parse(const std::string& input)
-				{
-					auto result = P::Parse(input);
-					if(result.Success.HasValue())
-						return ParsingSuccess{"", result.Success->Remaining};
+			static ParsingResult Parse(const std::string& input)
+			{
+				auto result = P::Parse(input);
+				if(result.Success.HasValue())
+					return ParsingSuccess{{}, result.Success->Remaining};
 
-					return ParsingError{};
-				}
+				return ParsingError{};
+			}
 		};
-		
+
 		struct IParser
 		{
 			virtual ParsingResult ParseVirtual(const std::string& input) = 0;
+			virtual ~IParser() = default;
 		};
 		
 		template <typename ID>
 		struct Self 
 		{
-			static IParser* self(IParser* parser = nullptr) { static auto p = parser; return p; };
+			static IParser* self(IParser* parser = nullptr) 
+			{ 
+				static IParser* p = parser;
+				return p; 
+			};
+
 			static ParsingResult Parse(const std::string& input)
 			{
 				return self()->ParseVirtual(input);
@@ -150,7 +160,20 @@ namespace pg
 				return P::Parse(input);
 			}
 		};
-	}
+		
+		template <typename P, typename X>
+		struct Transform
+		{
+			static ParsingResult Parse(const std::string& input)
+			{
+				auto result = P::Parse(input);
+				if(result.Success.HasValue())
+					return ParsingSuccess{{X{}(result.Success->Content)}, result.Success->Remaining};
+				return result;
+			}
+		};
+		
+	};
 } 
 
 #endif /* end of include guard: __PG_PARSER_HPP__ */
