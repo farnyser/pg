@@ -25,8 +25,17 @@ struct define
 {
 	std::string operator()(const std::vector<std::string>& in)
 	{
-		functions[in[0]] = in[1];
-		return in[1];
+		auto expr = in[in.size()-1];
+		for(size_t i = 1; i+1 < in.size(); i++)
+		{
+			auto r = "{" + std::to_string(i-1) + "}";
+			
+			for(auto it = expr.find(in[i]); it != std::string::npos; it = expr.find(in[i]))
+				expr.replace(it, in[i].size(), r);
+		}
+
+		functions[in[0]] = expr;
+		return in[0] + " => " + expr;
 	};
 };
 
@@ -76,22 +85,33 @@ using lowop = And<ws, Or<Char<'+'>, Char<'-'>>, ws>;
 
 struct op_self;
 struct tm_self;
-struct op_list_self;
 
+
+struct identifier_list_self;
+using identifier_list = Recurse<identifier_list_self, 
+					Or<
+						And<identifier, ws, Ignore<Char<','>>, ws, Self<identifier_list_self>>,
+						identifier
+					>>;
+
+struct op_list_self;
 using op_list = Recurse<op_list_self, 
 					Or<
-						And<Self<op_self>, ws, Char<','>, ws, Self<op_list_self>>,
+						And<Self<op_self>, ws, Ignore<Char<','>>, ws, Self<op_list_self>>,
 						Self<op_self>
 					>>;
+
 using fct_call = Transform<
 						And<identifier, Ignore<Char<'('>>, Optional<op_list>, Ignore<Char<')'>>>
 						, call>;
+
 using factor = Or<
 					And<Ignore<Char<'('>>, Self<op_self>, Ignore<Char<')'>>>, 
 					fct_call,
 					Transform<identifier, find_value>,
 					decimal
 				>;
+
 using term = Recurse<tm_self, Or<
 		Transform<And<factor, highop, Self<tm_self>>, apply_biop>,
 		factor	
@@ -105,7 +125,11 @@ using op = Recurse<op_self, Or<
 using fct_def = Transform<
 		And<
 			identifier, 
-			Ignore<And<Char<'('>, ws, Char<')'>, ws, Char<'='>>>, 
+			And<
+				Ignore<And<Char<'('>, ws>>, 
+				Optional<identifier_list>, 
+				Ignore<And<Char<')'>, ws, Char<'='>>>
+			>, 
 			Many<NotChar<'\n'>>
 		>, define>; 
 
