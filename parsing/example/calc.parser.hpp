@@ -14,6 +14,22 @@ using decimal = And<Ignore<ws>,
 			   Ignore<ws>>;
 using identifier = And<ws, Many<CharRange<'a', 'z'>>, ws>;
 
+static std::map<std::string, std::string> functions;
+
+struct call
+{
+	std::string operator()(const std::vector<std::string>& result);
+};
+
+struct define 
+{
+	std::string operator()(const std::vector<std::string>& in)
+	{
+		functions[in[0]] = in[1];
+		return in[1];
+	};
+};
+
 struct apply_biop
 {
 	std::string operator()(const std::vector<std::string>& result)
@@ -60,9 +76,19 @@ using lowop = And<ws, Or<Char<'+'>, Char<'-'>>, ws>;
 
 struct op_self;
 struct tm_self;
+struct op_list_self;
 
+using op_list = Recurse<op_list_self, 
+					Or<
+						And<Self<op_self>, ws, Char<','>, ws, Self<op_list_self>>,
+						Self<op_self>
+					>>;
+using fct_call = Transform<
+						And<identifier, Ignore<Char<'('>>, Optional<op_list>, Ignore<Char<')'>>>
+						, call>;
 using factor = Or<
 					And<Ignore<Char<'('>>, Self<op_self>, Ignore<Char<')'>>>, 
+					fct_call,
 					Transform<identifier, find_value>,
 					decimal
 				>;
@@ -76,7 +102,30 @@ using op = Recurse<op_self, Or<
 			term
 			>>;
 
+using fct_def = Transform<
+		And<
+			identifier, 
+			Ignore<And<Char<'('>, ws, Char<')'>, ws, Char<'='>>>, 
+			Many<NotChar<'\n'>>
+		>, define>; 
+
 using assignement = Transform<And<identifier, Char<'='>, op>, set_value>;
 
-using expression = Or<assignement, op>;
+using expression = Or<assignement, fct_def, op>;
+
+	std::string call::operator()(const std::vector<std::string>& result)
+	{
+		auto r = functions[result[0]];
+
+		for(size_t i = 0; i+1 < result.size(); i++)
+		{
+			auto key = "{" + std::to_string(i) + "}";
+			
+			for(auto it = r.find(key); it != std::string::npos; it = r.find(key))
+				r.replace(it, key.size(), result[i+1]);
+		}
+
+		return op::Parse(r).Success->Flat();
+	}
+
 
